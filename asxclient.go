@@ -64,6 +64,30 @@ func (c *ASXClient) Login() (err error) {
   return nil
 }
 
+// Logout - end a user session
+func (c *ASXClient) Logout() (err error) {
+  if c.Credentials.StakeSessionToken == "" {
+    return NewStakeError("logout", ErrSessionTokenMissing)
+  }
+
+  u, err := url.JoinPath(c.apiUrl, "userauth", c.Credentials.StakeSessionToken)
+  if err != nil {
+    return NewStakeError("logout", err)
+  }
+
+  req, _ := NewJSONRequest("DELETE", u, nil)
+  resp, err := c.httpclient.Do(req)
+  if err != nil {
+    return NewStakeError("logout", err)
+  }
+  if resp.StatusCode == 200 {
+    c.Credentials.StakeSessionToken = ""
+    return nil
+  }
+
+  return NewStakeError("cash", ErrInvalidAPIResponse)
+}
+
 // GetMarket - Get the current market status
 func (c *ASXClient) GetMarket() (*Market, error) {
   u := "https://early-bird-promo.hellostake.com/marketStatus"

@@ -235,6 +235,24 @@ func (c *ASXClient) CancelOrder(uuid string) (error) {
   return NewStakeError("orders/cancel", ErrInvalidAPIResponse)
 }
 
+// GetBrokerage - get the current available cash
+func (c *ASXClient) GetBrokerage(price float64) (*Brokerage, error) {
+  u, err := url.JoinPath(c.apiUrl, "asx/orders/brokerage")
+  if err != nil {
+    return nil, NewStakeError("brokerage", err)
+  }
+
+  u = fmt.Sprintf("%s?orderAmount=%.2f", u, price)
+
+  rd, err := c.AuthedRequest("GET", u, nil)
+  if rd.StatusCode == 200 {
+    b := NewBrokerageFromJSON(rd.Body)
+    return b, nil
+  }
+
+  return nil, NewStakeError("brokerage", ErrInvalidAPIResponse)
+}
+
 // AuthedRequest - perform a http request and send auth token
 func (c *ASXClient) AuthedRequest (method string, fullurl string, jsonBody []byte) (*ResponseData, error) {
   if c.Credentials.StakeSessionToken == "" {

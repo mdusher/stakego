@@ -186,3 +186,71 @@ func (c *ASXClient) GetUser() (*User, error) {
   }
   return nil, NewStakeError("user", ErrInvalidAPIResponse)
 }
+
+// GetOrders - get pending orders
+func (c *ASXClient) GetOrders() (*[]OrderDetails, error) {
+  u, err := url.JoinPath(c.apiUrl, "asx/orders")
+  if err != nil {
+    return nil, NewStakeError("orders", err)
+  }
+
+  req, _ := NewJSONRequest("GET", u, nil)
+  req.Header.Set("Stake-Session-Token", c.Credentials.StakeSessionToken)
+  resp, err := c.httpclient.Do(req)
+  if err != nil {
+    return nil, NewStakeError("orders", err)
+  }
+
+  if resp.StatusCode == 200 {
+    defer resp.Body.Close()
+    rbody, _ := io.ReadAll(resp.Body)
+    orders := NewOrderListFromJSON(rbody)
+    return orders, nil
+  }
+  return nil, NewStakeError("orders", ErrInvalidAPIResponse)
+}
+
+// PlaceOrder - place an order
+func (c *ASXClient) PlaceOrder(order Order) (*OrderResponse, error) {
+  u, err := url.JoinPath(c.apiUrl, "asx/orders")
+  if err != nil {
+    return nil, NewStakeError("orders/place", err)
+  }
+
+  req, _ := NewJSONRequest("POST", u, order.AsJSON())
+  req.Header.Set("Stake-Session-Token", c.Credentials.StakeSessionToken)
+  resp, err := c.httpclient.Do(req)
+  if err != nil {
+    return nil, NewStakeError("orders/place", err)
+  }
+
+  if resp.StatusCode == 200 {
+    defer resp.Body.Close()
+    rbody, _ := io.ReadAll(resp.Body)
+    orders := NewOrderResponseFromJSON(rbody)
+    return orders, nil
+  }
+
+  return nil, NewStakeError("orders/place", ErrInvalidAPIResponse)
+}
+
+// CancelOrder - cancel an order
+func (c *ASXClient) CancelOrder(uuid string) (error) {
+  u, err := url.JoinPath(c.apiUrl, "asx/orders", uuid, "cancel")
+  if err != nil {
+    return NewStakeError("orders/cancel", err)
+  }
+
+  req, _ := NewJSONRequest("POST", u, nil)
+  req.Header.Set("Stake-Session-Token", c.Credentials.StakeSessionToken)
+  resp, err := c.httpclient.Do(req)
+  if err != nil {
+    return NewStakeError("orders/cancel", err)
+  }
+
+  if resp.StatusCode == 200 {
+    return nil
+  }
+
+  return NewStakeError("orders/cancel", ErrInvalidAPIResponse)
+}

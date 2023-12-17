@@ -4,6 +4,7 @@ import (
   "net/http"
   "net/url"
   "io"
+  "fmt"
 )
 
 // NewASXClient - create and initialise an ASXClient
@@ -20,6 +21,13 @@ type ASXClient struct {
   User *User
   httpclient http.Client
 }
+
+// ResponseData - holds http response
+type ResponseData struct {
+  StatusCode int
+  Body []byte
+}
+
 
 // Init - initialise the ASX client with defaults
 func (c *ASXClient) Init() {
@@ -80,6 +88,7 @@ func (c *ASXClient) Logout() (err error) {
   if err != nil {
     return NewStakeError("logout", err)
   }
+
   if resp.StatusCode == 200 {
     c.Credentials.StakeSessionToken = ""
     return nil
@@ -112,53 +121,37 @@ func (c *ASXClient) GetMarket() (*Market, error) {
 
 // GetCash - get the current available cash
 func (c *ASXClient) GetCash() (*Cash, error) {
-  if c.Credentials.StakeSessionToken == "" {
-    return nil, NewStakeError("cash", ErrSessionTokenMissing)
-  }
-
   u, err := url.JoinPath(c.apiUrl, "asx/cash")
   if err != nil {
     return nil, NewStakeError("cash", err)
   }
 
-  req, _ := NewJSONRequest("GET", u, nil)
-  req.Header.Set("Stake-Session-Token", c.Credentials.StakeSessionToken)
-  resp, err := c.httpclient.Do(req)
+  rd, err := c.AuthedRequest("GET", u, nil)
   if err != nil {
     return nil, NewStakeError("cash", err)
   }
 
-  if resp.StatusCode == 200 {
-    defer resp.Body.Close()
-    rbody, _ := io.ReadAll(resp.Body)
-    c := NewCashFromJSON(rbody)
+  if rd.StatusCode == 200 {
+    c := NewCashFromJSON(rd.Body)
     return c, nil
   }
   return nil, NewStakeError("cash", ErrInvalidAPIResponse)
 }
 
-// GetEquityPoisitions - get the current user's equity positions
+// GetEquityPositions - get the current user's equity positions
 func (c *ASXClient) GetEquityPositions() (*EquityPositions, error) {
-  if c.Credentials.StakeSessionToken == "" {
-    return nil, NewStakeError("equity positions", ErrSessionTokenMissing)
-  }
-
   u, err := url.JoinPath(c.apiUrl, "asx/instrument/equityPositions")
   if err != nil {
     return nil, NewStakeError("equity positions", err)
   }
 
-  req, _ := NewJSONRequest("GET", u, nil)
-  req.Header.Set("Stake-Session-Token", c.Credentials.StakeSessionToken)
-  resp, err := c.httpclient.Do(req)
+  rd, err := c.AuthedRequest("GET", u, nil)
   if err != nil {
     return nil, NewStakeError("equity positions", err)
   }
 
-  if resp.StatusCode == 200 {
-    defer resp.Body.Close()
-    rbody, _ := io.ReadAll(resp.Body)
-    e := NewEquityPositionsFromJSON(rbody)
+  if rd.StatusCode == 200 {
+    e := NewEquityPositionsFromJSON(rd.Body)
     return e, nil
   }
   return nil, NewStakeError("equity positions", ErrInvalidAPIResponse)
@@ -171,19 +164,16 @@ func (c *ASXClient) GetUser() (*User, error) {
     return nil, NewStakeError("user", err)
   }
 
-  req, _ := NewJSONRequest("GET", u, nil)
-  req.Header.Set("Stake-Session-Token", c.Credentials.StakeSessionToken)
-  resp, err := c.httpclient.Do(req)
+  rd, err := c.AuthedRequest("GET", u, nil)
   if err != nil {
     return nil, NewStakeError("user", err)
   }
 
-  if resp.StatusCode == 200 {
-    defer resp.Body.Close()
-    rbody, _ := io.ReadAll(resp.Body)
-    user := NewUserFromJSON(rbody)
+  if rd.StatusCode == 200 {
+    user := NewUserFromJSON(rd.Body)
     return user, nil
   }
+
   return nil, NewStakeError("user", ErrInvalidAPIResponse)
 }
 
@@ -194,17 +184,13 @@ func (c *ASXClient) GetOrders() (*[]OrderDetails, error) {
     return nil, NewStakeError("orders", err)
   }
 
-  req, _ := NewJSONRequest("GET", u, nil)
-  req.Header.Set("Stake-Session-Token", c.Credentials.StakeSessionToken)
-  resp, err := c.httpclient.Do(req)
+  rd, err := c.AuthedRequest("GET", u, nil)
   if err != nil {
     return nil, NewStakeError("orders", err)
   }
 
-  if resp.StatusCode == 200 {
-    defer resp.Body.Close()
-    rbody, _ := io.ReadAll(resp.Body)
-    orders := NewOrderListFromJSON(rbody)
+  if rd.StatusCode == 200 {
+    orders := NewOrderListFromJSON(rd.Body)
     return orders, nil
   }
   return nil, NewStakeError("orders", ErrInvalidAPIResponse)
@@ -217,17 +203,13 @@ func (c *ASXClient) PlaceOrder(order Order) (*OrderResponse, error) {
     return nil, NewStakeError("orders/place", err)
   }
 
-  req, _ := NewJSONRequest("POST", u, order.AsJSON())
-  req.Header.Set("Stake-Session-Token", c.Credentials.StakeSessionToken)
-  resp, err := c.httpclient.Do(req)
+  rd, err := c.AuthedRequest("POST", u, order.AsJSON())
   if err != nil {
     return nil, NewStakeError("orders/place", err)
   }
 
-  if resp.StatusCode == 200 {
-    defer resp.Body.Close()
-    rbody, _ := io.ReadAll(resp.Body)
-    orders := NewOrderResponseFromJSON(rbody)
+  if rd.StatusCode == 200 {
+    orders := NewOrderResponseFromJSON(rd.Body)
     return orders, nil
   }
 
@@ -241,16 +223,40 @@ func (c *ASXClient) CancelOrder(uuid string) (error) {
     return NewStakeError("orders/cancel", err)
   }
 
-  req, _ := NewJSONRequest("POST", u, nil)
-  req.Header.Set("Stake-Session-Token", c.Credentials.StakeSessionToken)
-  resp, err := c.httpclient.Do(req)
+  rd, err := c.AuthedRequest("POST", u, nil)
   if err != nil {
     return NewStakeError("orders/cancel", err)
   }
 
-  if resp.StatusCode == 200 {
+  if rd.StatusCode == 200 {
     return nil
   }
 
   return NewStakeError("orders/cancel", ErrInvalidAPIResponse)
+}
+
+// AuthedRequest - perform a http request and send auth token
+func (c *ASXClient) AuthedRequest (method string, fullurl string, jsonBody []byte) (*ResponseData, error) {
+  if c.Credentials.StakeSessionToken == "" {
+    return nil, ErrSessionTokenMissing
+  }
+
+  req, _ := NewJSONRequest(method, fullurl, jsonBody)
+  req.Header.Set("Stake-Session-Token", c.Credentials.StakeSessionToken)
+  resp, err := c.httpclient.Do(req)
+  if err != nil {
+    return nil, err
+  }
+
+  var rd ResponseData
+  rd.StatusCode = resp.StatusCode
+
+  defer resp.Body.Close()
+  rbody, err := io.ReadAll(resp.Body)
+  if err != nil {
+    return nil, err
+  }
+  rd.Body = rbody
+
+  return &rd, nil
 }

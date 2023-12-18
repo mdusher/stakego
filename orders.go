@@ -6,12 +6,12 @@ import (
 )
 
 
-const orderBUY = "BUY"
-const orderSELL = "SELL"
-const orderTypeLimit = "LIMIT"
-const orderTypeSTOP = "STOP"
-const orderValidityGoodTilDate = "GTD"
-const orderValidityGoodForDay = "GFD"
+const OrderBUY = "BUY"
+const OrderSELL = "SELL"
+const OrderTypeLimit = "LIMIT"
+const OrderTypeSTOP = "STOP"
+const OrderValidityGoodTilDate = "GTD"
+const OrderValidityGoodForDay = "GFD"
 
 // NewOrderListFromJSON - creates a slice of OrderDetails from a JSON string
 func NewOrderListFromJSON(jsonStr []byte) *[]OrderDetails {
@@ -36,11 +36,11 @@ func NewOrderResponseFromJSON(jsonStr []byte) *OrderResponse {
 // NewBuyOrder - create a new buy order
 func NewBuyOrder() *Order {
 	var o Order
-	o.Side = orderBUY
-	o.Type = orderTypeLimit
+	o.Side = OrderBUY
+	o.Type = OrderTypeLimit
 	o.Units = 0
 	o.Price = 0.0
-	o.Validity = orderValidityGoodTilDate
+	o.Validity = OrderValidityGoodTilDate
 	o.ValidityDate = time.Now().AddDate(0, 1, 0).Format("2006-01-02")
 	o.AllowAwaitingTrigger = true
 	return &o
@@ -49,11 +49,11 @@ func NewBuyOrder() *Order {
 // NewSellOrder - create a new sell order
 func NewSellOrder() *Order {
 	var o Order
-	o.Side = orderSELL
-	o.Type = orderTypeLimit
+	o.Side = OrderSELL
+	o.Type = OrderTypeLimit
 	o.Units = 0
 	o.Price = 0.0
-	o.Validity = orderValidityGoodTilDate
+	o.Validity = OrderValidityGoodTilDate
 	o.ValidityDate = time.Now().AddDate(0, 1, 0).Format("2006-01-02")
 	o.AllowAwaitingTrigger = true
 	return &o

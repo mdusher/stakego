@@ -5,13 +5,14 @@ import (
   "net/url"
   "io"
   "fmt"
+  "sync"
 )
 
 // NewASXClient - create and initialise an ASXClient
-func NewASXClient() ASXClient {
+func NewASXClient() *ASXClient {
   c := ASXClient{}
   c.Init()
-  return c
+  return &c
 }
 
 // ASXClient - Client for interacting with Stake ASX
@@ -20,6 +21,8 @@ type ASXClient struct {
   Credentials *Credentials
   User *User
   httpclient http.Client
+  tokenMutex sync.Mutex
+  authMutex sync.Mutex
 }
 
 // ResponseData - holds http response
@@ -37,7 +40,10 @@ func (c *ASXClient) Init() {
 
 // Login - create a user session
 func (c *ASXClient) Login() (err error) {
-  if c.Credentials.StakeSessionToken == "" {
+  c.authMutex.Lock()
+  defer c.authMutex.Unlock()
+
+  if c.Credentials.GetSessionToken() == "" {
     u, err := url.JoinPath(c.apiUrl, "sessions/v2/createSession")
     if err != nil {
       return NewStakeError("login", err)
@@ -56,11 +62,11 @@ func (c *ASXClient) Login() (err error) {
         return NewStakeError("login", err)
       }
       u := NewUserSessionFromJSON(rbody)
-      c.Credentials.StakeSessionToken = u.SessionKey
+      c.Credentials.SetSessionToken(u.SessionKey)
     }
   }
 
-  if c.Credentials.StakeSessionToken == "" {
+  if c.Credentials.GetSessionToken() == "" {
     return NewStakeError("login", ErrSessionTokenMissing)
   }
 
@@ -74,11 +80,14 @@ func (c *ASXClient) Login() (err error) {
 
 // Logout - end a user session
 func (c *ASXClient) Logout() (err error) {
-  if c.Credentials.StakeSessionToken == "" {
+  c.authMutex.Lock()
+  defer c.authMutex.Unlock()
+
+  if c.Credentials.GetSessionToken() == "" {
     return NewStakeError("logout", ErrSessionTokenMissing)
   }
 
-  u, err := url.JoinPath(c.apiUrl, "userauth", c.Credentials.StakeSessionToken)
+  u, err := url.JoinPath(c.apiUrl, "userauth", c.Credentials.GetSessionToken())
   if err != nil {
     return NewStakeError("logout", err)
   }
@@ -90,7 +99,7 @@ func (c *ASXClient) Logout() (err error) {
   }
 
   if resp.StatusCode == 200 {
-    c.Credentials.StakeSessionToken = ""
+    c.Credentials.SetSessionToken("")
     return nil
   }
 
@@ -255,12 +264,12 @@ func (c *ASXClient) GetBrokerage(price float64) (*Brokerage, error) {
 
 // AuthedRequest - perform a http request and send auth token
 func (c *ASXClient) AuthedRequest (method string, fullurl string, jsonBody []byte) (*ResponseData, error) {
-  if c.Credentials.StakeSessionToken == "" {
+  if c.Credentials.GetSessionToken() == "" {
     return nil, ErrSessionTokenMissing
   }
 
   req, _ := NewJSONRequest(method, fullurl, jsonBody)
-  req.Header.Set("Stake-Session-Token", c.Credentials.StakeSessionToken)
+  req.Header.Set("Stake-Session-Token", c.Credentials.GetSessionToken())
   resp, err := c.httpclient.Do(req)
   if err != nil {
     return nil, err

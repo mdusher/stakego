@@ -2,16 +2,17 @@ package stakego
 
 import (
   "encoding/json"
+  "sync"
   "time"
   "github.com/pquerna/otp/totp"
 )
 
 // NewCredentials - creates a new Credentials and tries to populate
 // it from environment variables
-func NewCredentials() Credentials {
+func NewCredentials() *Credentials {
   r := Credentials{}
   r.FromEnv()
-  return r
+  return &r
 }
 
 // Credentials - holds info for creating a UserSession
@@ -23,6 +24,7 @@ type Credentials struct {
   RememberMeDays int `json:"rememberMeDays"`
   PlatformType string `json:"platformType"`
   StakeSessionToken string `json:"-"`
+  tokenMutex sync.Mutex `json:"-"`
 }
 
 // FromEnv - retrieves login details from the environment
@@ -57,3 +59,17 @@ func (r *Credentials) GetOTP() string {
   }
   return ""
 }
+
+// SetSessionToken -
+func (c *Credentials) SetSessionToken(token string) {
+	c.tokenMutex.Lock()
+	defer c.tokenMutex.Unlock()
+	c.StakeSessionToken = token
+  }
+
+  // GetSessionToken -
+  func (c *Credentials) GetSessionToken() string {
+	c.tokenMutex.Lock()
+	defer c.tokenMutex.Unlock()
+	return c.StakeSessionToken
+  }

@@ -5,7 +5,6 @@ import (
 	"time"
 )
 
-
 const OrderBUY = "BUY"
 const OrderSELL = "SELL"
 const OrderTypeLimit = "LIMIT"
@@ -18,7 +17,7 @@ func NewOrderListFromJSON(jsonStr []byte) *[]OrderDetails {
 	var o []OrderDetails
 	err := json.Unmarshal(jsonStr, &o)
 	if err != nil {
-	  return nil
+		return nil
 	}
 	return &o
 }
@@ -28,7 +27,7 @@ func NewOrderResponseFromJSON(jsonStr []byte) *OrderResponse {
 	var o OrderResponse
 	err := json.Unmarshal(jsonStr, &o)
 	if err != nil {
-	  return nil
+		return nil
 	}
 	return &o
 }
@@ -61,14 +60,14 @@ func NewSellOrder() *Order {
 
 // Order information
 type Order struct {
-	Side                 string `json:"side"`
-	Type                 string `json:"type"`
-	Units                int    `json:"units"`
+	Side                 string  `json:"side"`
+	Type                 string  `json:"type"`
+	Units                int     `json:"units"`
 	Price                float64 `json:"price,string"`
-	Validity             string `json:"validity"`
-	ValidityDate         string `json:"validityDate"`
-	InstrumentCode       string `json:"instrumentCode"`
-	AllowAwaitingTrigger bool   `json:"allowAwaitingTrigger"`
+	Validity             string  `json:"validity"`
+	ValidityDate         string  `json:"validityDate"`
+	InstrumentCode       string  `json:"instrumentCode"`
+	AllowAwaitingTrigger bool    `json:"allowAwaitingTrigger"`
 }
 
 // AsJSON - convert to json

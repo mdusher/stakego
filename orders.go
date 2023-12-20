@@ -88,7 +88,7 @@ type OrderDetails struct {
 	BrokerInstructionID        int         `json:"brokerInstructionId"`
 	BrokerInstructionVersionID int         `json:"brokerInstructionVersionId"`
 	UserID                     string      `json:"userId"`
-	InstrumentID               interface{} `json:"instrumentId"`
+	InstrumentID               string      `json:"instrumentId"`
 	InstrumentCode             string      `json:"instrumentCode"`
 	Side                       string      `json:"side"`
 	LimitPrice                 float64     `json:"limitPrice"`

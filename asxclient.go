@@ -109,7 +109,9 @@ func (c *ASXClient) Logout() (err error) {
 func (c *ASXClient) GetMarket() (*Market, error) {
 	// early-bird-promo.hellostake.com has been taken down,
 	// so pretend we're always open for now
-	return NewMarketFromJSON([]byte("{\"Status\":{\"Current\": \"OPEN\"}}")), nil
+	m := Market{}
+	m.Status.Current = "OPEN"
+	return &m, nil
 	// u := "https://early-bird-promo.hellostake.com/marketStatus"
 	// req, _ := NewJSONRequest("GET", u, nil)
 	// resp, err := c.httpclient.Do(req)

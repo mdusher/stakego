@@ -110,7 +110,6 @@ func (c *ASXClient) GetMarket() (*Market, error) {
 	// early-bird-promo.hellostake.com has been taken down,
 	// so pretend we're always open for now
 	m := Market{}
-	m.Status.Current = "OPEN"
 	return &m, nil
 	// u := "https://early-bird-promo.hellostake.com/marketStatus"
 	// req, _ := NewJSONRequest("GET", u, nil)

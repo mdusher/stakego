@@ -1,6 +1,6 @@
 module github.com/mdusher/stakego
 
-go 1.21.5
+go 1.22
 
 require github.com/pquerna/otp v1.4.0
 

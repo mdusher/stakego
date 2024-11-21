@@ -107,7 +107,7 @@ func (c *ASXClient) Logout() (err error) {
 
 // GetMarket - Get the current market status
 func (c *ASXClient) GetMarket() (*Market, error) {
-	u := "https://early-bird-promo.hellostake.com/marketStatus"
+	u := "https://d2bpoo7jm9cntm.cloudfront.net/_get_location"
 	req, _ := NewJSONRequest("GET", u, nil)
 	resp, err := c.httpclient.Do(req)
 	if err != nil {
@@ -120,11 +120,12 @@ func (c *ASXClient) GetMarket() (*Market, error) {
 		if err != nil {
 			return nil, NewStakeError("market", err)
 		}
-		m := NewMarketFromJSON(rbody)
+		l := NewLocationFromJSON(rbody)
+		m := NewMarketWithLocationData(l)
 		return m, nil
 	}
 
-	return nil, NewStakeError("market", ErrInvalidAPIResponse)
+	return nil, NewStakeError("location", ErrInvalidAPIResponse)
 }
 
 // GetCash - get the current available cash
